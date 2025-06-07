@@ -36,18 +36,24 @@ func main() {
 	}
 }
 
+// Display the Home
 func displayHome() string {
 	selectedDef, _ := pterm.DefaultInteractiveSelect.WithOptions([]string{"Easy", "Medium", "Hard"}).Show("Select Difficulty")
 
 	switch selectedDef {
 	case "Easy":
-		selectRandomWords()
+		selectRandomWords(10)
+	case "Medium":
+		selectRandomWords(15)
+	case "Hard":
+		selectRandomWords(20)
 	}
+
 	return selectedDef
 }
 
-func selectRandomWords() {
-	easyLevel := 10
+// Select Random words
+func selectRandomWords(def int) []string {
 	// easyLevelTime := 3 * time.Second
 
 	// gameStart := false
@@ -66,9 +72,10 @@ func selectRandomWords() {
 	rand.Shuffle(len(words), func(i, j int) {
 		words[i], words[j] = words[j], words[i]
 	})
-	selectedRandomWords := words[:easyLevel]
+	selectedRandomWords := words[:def]
 
 	fmt.Println("Selected words", selectedRandomWords)
+	return selectedRandomWords
 }
 
 func GameStart() {
