@@ -42,9 +42,11 @@ func displayHome() string {
 
 	switch selectedDef {
 	case "Easy":
-		selectRandomWords(10)
+		value := selectRandomWords(10)
+		GameStart(value)
 	case "Medium":
 		selectRandomWords(15)
+
 	case "Hard":
 		selectRandomWords(20)
 	}
@@ -74,9 +76,13 @@ func selectRandomWords(def int) []string {
 	})
 	selectedRandomWords := words[:def]
 
-	fmt.Println("Selected words", selectedRandomWords)
+	//	fmt.Println("Selected words", selectedRandomWords)
 	return selectedRandomWords
 }
 
-func GameStart() {
+func GameStart(words []string) {
+	for i := range len(words) {
+		time.Sleep(2 * time.Second)
+		fmt.Println(words[i])
+	}
 }
