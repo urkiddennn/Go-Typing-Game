@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os"
@@ -10,6 +11,8 @@ import (
 
 	"github.com/pterm/pterm"
 )
+
+const historyFile = "records.json"
 
 // For getting the current time and date
 type (
@@ -20,13 +23,13 @@ type (
 )
 
 type currentScore struct {
-	id         int
-	scoreWPM   float64
-	Created_at string
+	id         int     `json:"id"`
+	scoreWPM   float64 `json:"score_wpm"`
+	Created_at string  `json:"created_at"`
 }
 
 type typeHistory struct {
-	SCOREWPM []currentScore
+	SCOREWPM []currentScore `json:"score_wpm"`
 }
 
 func main() {
@@ -38,7 +41,7 @@ func main() {
 		choice, _ := pterm.DefaultInteractiveSelect.WithOptions([]string{"Home", "Profile", "Exit"}).Show("Select Where you want to go")
 		switch choice {
 		case "Home":
-			displayHome()
+			displayHome(&th)
 		case "Profile":
 			// Add profile functionality later
 			profilePage(th)
@@ -49,7 +52,7 @@ func main() {
 }
 
 // Display the Home
-func displayHome() string {
+func displayHome(th *typeHistory) string {
 	selectedDef, _ := pterm.DefaultInteractiveSelect.WithOptions([]string{"Easy", "Medium", "Hard"}).Show("Select Difficulty")
 
 	var wordCount int
@@ -63,7 +66,7 @@ func displayHome() string {
 	}
 
 	value := selectRandomWords(wordCount)
-	GameStart(value)
+	GameStart(value, th)
 	return selectedDef
 }
 
@@ -88,10 +91,9 @@ func selectRandomWords(def int) []string {
 }
 
 // Game start state
-func GameStart(words []string) {
+func GameStart(words []string, th *typeHistory) {
 	// Set game duration based on difficulty
 	var gameDuration time.Duration
-	th := loadHistory()
 	switch len(words) {
 	case 10:
 		gameDuration = 60 * time.Second // Easy
@@ -135,7 +137,7 @@ func GameStart(words []string) {
 	elapsedTime := time.Since(startTime).Seconds()
 	wpm := float64(len(words)) / (elapsedTime / 60.0)
 	pterm.Success.Println("Game Completed!")
-	saveRecord(&th, wpm)
+	saveRecord(th, wpm)
 
 	fmt.Printf("Words typed: %d\n", len(words))
 	fmt.Printf("Time taken: %.2f seconds\n", elapsedTime)
@@ -161,17 +163,41 @@ func profilePage(th typeHistory) {
 
 // Save records
 func saveRecord(th *typeHistory, wpm float64) {
+	id := len(th.SCOREWPM) + 1
+	createdAt := time.Now().Format(time.RFC3339)
 	crScore := currentScore{
-		id:         1,
+		id:         id,
 		scoreWPM:   wpm,
-		Created_at: "ss",
+		Created_at: createdAt,
 	}
 	th.SCOREWPM = append(th.SCOREWPM, crScore)
+
+	file, err := os.Create(historyFile)
+	if err != nil {
+		pterm.Error.Printf("Error saving Records: %v\n", err)
+	}
+	defer file.Close()
 	pterm.Success.Println("Score added to history!")
 }
 
 func loadHistory() typeHistory {
 	var th typeHistory
+
+	file, err := os.Open(historyFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return th
+		}
+		pterm.Error.Printf("Errpr loading Records: %v\n ", err)
+		return th
+	}
+	defer file.Close()
+
+	decoder := json.NewDecoder(file)
+	if err := decoder.Decode(&th); err != nil {
+		pterm.Error.Printf("Errr decoding history: %v\n", err)
+		return th
+	}
 
 	return th
 }
