@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/pterm/pterm"
@@ -15,19 +16,23 @@ type (
 	TimeStamp time.Time
 	Highest   struct {
 		highestWPM int
-		HighestAcc float64
 	}
 )
 
+type currentScore struct {
+	id         int
+	scoreWPM   float64
+	Created_at string
+}
+
 type typeHistory struct {
-	id          int
-	scoreWPM    int
-	accuracyWPM float64
-	Created_at  *TimeStamp
+	SCOREWPM []currentScore
 }
 
 func main() {
 	pterm.Info.Println("Select Menu")
+
+	th := loadHistory()
 
 	for {
 		choice, _ := pterm.DefaultInteractiveSelect.WithOptions([]string{"Home", "Profile", "Exit"}).Show("Select Where you want to go")
@@ -36,7 +41,7 @@ func main() {
 			displayHome()
 		case "Profile":
 			// Add profile functionality later
-			pterm.Info.Println("Profile not implemented yet")
+			profilePage(th)
 		case "Exit":
 			os.Exit(0)
 		}
@@ -82,9 +87,11 @@ func selectRandomWords(def int) []string {
 	return words[:def]
 }
 
+// Game start state
 func GameStart(words []string) {
 	// Set game duration based on difficulty
 	var gameDuration time.Duration
+	th := loadHistory()
 	switch len(words) {
 	case 10:
 		gameDuration = 60 * time.Second // Easy
@@ -128,7 +135,43 @@ func GameStart(words []string) {
 	elapsedTime := time.Since(startTime).Seconds()
 	wpm := float64(len(words)) / (elapsedTime / 60.0)
 	pterm.Success.Println("Game Completed!")
+	saveRecord(&th, wpm)
+
 	fmt.Printf("Words typed: %d\n", len(words))
 	fmt.Printf("Time taken: %.2f seconds\n", elapsedTime)
 	fmt.Printf("Words per minute (WPM): %.2f\n", wpm)
+}
+
+// Profile Page
+func profilePage(th typeHistory) {
+	pterm.Info.Println("This is your profile")
+
+	//	if len(th.SCOREWPM) == 0 {
+	//	pterm.Info.Println("No available history")
+	//	return
+	//}
+	table := pterm.TableData{{"ID", "Score WPM", "Date"}}
+	for _, typeH := range th.SCOREWPM {
+		wpmStr := strconv.FormatFloat(typeH.scoreWPM, 'f', 2, 64)
+		ID := strconv.Itoa(typeH.id)
+		table = append(table, []string{ID, wpmStr, typeH.Created_at})
+	}
+	pterm.DefaultTable.WithHasHeader().WithData(table).Render()
+}
+
+// Save records
+func saveRecord(th *typeHistory, wpm float64) {
+	crScore := currentScore{
+		id:         1,
+		scoreWPM:   wpm,
+		Created_at: "ss",
+	}
+	th.SCOREWPM = append(th.SCOREWPM, crScore)
+	pterm.Success.Println("Score added to history!")
+}
+
+func loadHistory() typeHistory {
+	var th typeHistory
+
+	return th
 }
